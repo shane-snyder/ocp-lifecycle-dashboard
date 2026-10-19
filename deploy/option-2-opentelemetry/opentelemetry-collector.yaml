@@ -23,7 +23,7 @@ spec:
     limits: { cpu: 500m, memory: 256Mi }
   config:
     receivers:
-      prometheus:
+      prometheus/ocp-lifecycle:
         config:
           scrape_configs:
             - job_name: ocp-lifecycle-exporter
@@ -71,6 +71,6 @@ spec:
     service:
       pipelines:
         metrics:
-          receivers: [prometheus]
+          receivers: [prometheus/ocp-lifecycle]
           processors: [memory_limiter, resourcedetection, batch]
           exporters: [otlphttp]
