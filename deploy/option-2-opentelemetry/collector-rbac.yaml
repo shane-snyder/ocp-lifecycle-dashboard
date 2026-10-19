@@ -1,0 +1,29 @@
+# The collector's identity. The openshift resource detector reads the
+# cluster's Infrastructure object for k8s.cluster.name.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ocp-lifecycle-collector
+  namespace: ocp-lifecycle
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ocp-lifecycle-collector
+rules:
+  - apiGroups: ["config.openshift.io"]
+    resources: ["infrastructures", "infrastructures/status"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ocp-lifecycle-collector
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ocp-lifecycle-collector
+subjects:
+  - kind: ServiceAccount
+    name: ocp-lifecycle-collector
+    namespace: ocp-lifecycle

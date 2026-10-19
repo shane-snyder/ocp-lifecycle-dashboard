@@ -7,6 +7,7 @@ it, into the repo.
 """
 import argparse
 import json
+import re
 
 DS = {"type": "prometheus", "uid": "${datasource}"}
 C = 'cluster=~"$cluster"'
@@ -322,12 +323,39 @@ panels.append(row("Exporter health", y, collapsed=True, panels=[
 
 
 
-def dashboard(datasource=None, datasource_name=None):
-    """datasource: uid selected by default; None leaves Grafana's default data source."""
+# Matches the label `cluster` in PromQL and legends, not the $cluster variable
+# or metric names such as ocp_lifecycle_cluster_info.
+_CLUSTER_LABEL = re.compile(r"(?<![\w$])cluster\b")
+
+
+def _relabel(node, label):
+    """Rewrites every reference to the `cluster` label as `label`."""
+    if isinstance(node, list):
+        return [_relabel(v, label) for v in node]
+    if not isinstance(node, dict):
+        return node
+    out = {}
+    for k, v in node.items():
+        if k in ("expr", "legendFormat", "definition") or (k == "query" and isinstance(v, str)):
+            v = _CLUSTER_LABEL.sub(label, v)
+        elif k in ("renameByName", "indexByName", "excludeByName"):
+            v = {label if name == "cluster" else name: x for name, x in v.items()}
+        out[k] = _relabel(v, label)
+    return out
+
+
+def dashboard(datasource=None, datasource_name=None, cluster_label="cluster"):
+    """datasource: uid selected by default; None leaves Grafana's default data source.
+
+    cluster_label: the label that tells clusters apart. `cluster` comes from
+    ACM, Prometheus external labels or the collector config in this repo;
+    OpenTelemetry's resource detection ships `k8s_cluster_name` instead.
+    """
     current = {"text": datasource_name or datasource, "value": datasource} if datasource else {}
-    return {
-        "uid": "ocp-lifecycle",
-        "title": "OpenShift & operator lifecycle",
+    otel = cluster_label != "cluster"
+    d = {
+        "uid": "ocp-lifecycle-otel" if otel else "ocp-lifecycle",
+        "title": "OpenShift & operator lifecycle" + (" (OpenTelemetry)" if otel else ""),
         "description": "Red Hat product lifecycle for each cluster's OpenShift version and installed operators: "
                        "support phase, end dates, and OpenShift compatibility. Fed by ocp-lifecycle-exporter.",
         "tags": ["lifecycle", "openshift", "operators"],
@@ -347,10 +375,13 @@ def dashboard(datasource=None, datasource_name=None):
         ]},
         "panels": panels,
     }
+    return _relabel(d, cluster_label) if otel else d
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--datasource", help="uid of the data source selected by default")
+    ap.add_argument("--cluster-label", default="cluster",
+                    help="label that tells clusters apart (k8s_cluster_name for OpenTelemetry)")
     args = ap.parse_args()
-    print(json.dumps(dashboard(args.datasource), indent=2, ensure_ascii=False))
+    print(json.dumps(dashboard(args.datasource, cluster_label=args.cluster_label), indent=2, ensure_ascii=False))

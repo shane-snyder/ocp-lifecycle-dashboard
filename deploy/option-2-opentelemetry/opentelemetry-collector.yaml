@@ -1,7 +1,10 @@
 # Scrapes the exporter and forwards its series to your metrics backend. Needs
 # the Red Hat build of OpenTelemetry operator.
 #
-# Edit the two values marked CHANGE ME: this cluster's name and your backend.
+# The cluster is identified the OpenTelemetry way: resource detection sets
+# k8s.cluster.name, which Prometheus-style backends expose as the
+# k8s_cluster_name label that dashboards/ocp-lifecycle-otel.json selects on.
+# Edit the backend endpoint marked CHANGE ME.
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
@@ -10,6 +13,11 @@ metadata:
 spec:
   mode: deployment
   replicas: 1
+  serviceAccount: ocp-lifecycle-collector
+  env:
+    # Optional: a friendlier name than the infrastructure ID the openshift
+    # detector reports (e.g. mycluster-x7k2p). The env detector runs first and wins.
+    # - { name: OTEL_RESOURCE_ATTRIBUTES, value: "k8s.cluster.name=prod-east" }
   resources:
     requests: { cpu: 10m, memory: 64Mi }
     limits: { cpu: 500m, memory: 256Mi }
@@ -23,15 +31,28 @@ spec:
               scrape_timeout: 30s
               static_configs:
                 - targets: ["ocp-lifecycle-exporter.ocp-lifecycle.svc:9120"]
-                  labels:
-                    # The dashboard's Cluster selector. CHANGE ME: unique per cluster.
-                    cluster: my-cluster
 
     processors:
       memory_limiter:
         check_interval: 5s
         limit_percentage: 75
         spike_limit_percentage: 20
+      # k8s.cluster.name: OTEL_RESOURCE_ATTRIBUTES if set, otherwise the
+      # cluster's infrastructure name.
+      resourcedetection:
+        detectors: [env, openshift]
+        override: false
+        timeout: 5s
+      # Most backends keep resource attributes out of series labels unless told
+      # to promote them (Prometheus: otlp.promote_resource_attributes, Mimir:
+      # promote_otel_resource_attributes). If yours can't, copy it onto every
+      # data point instead by adding transform/cluster to the pipeline. Don't do
+      # both: a backend that also promotes it would see the label twice.
+      transform/cluster:
+        metric_statements:
+          - context: datapoint
+            statements:
+              - set(datapoint.attributes["k8s.cluster.name"], resource.attributes["k8s.cluster.name"])
       batch: {}
 
     exporters:
@@ -51,5 +72,5 @@ spec:
       pipelines:
         metrics:
           receivers: [prometheus]
-          processors: [memory_limiter, batch]
+          processors: [memory_limiter, resourcedetection, batch]
           exporters: [otlphttp]

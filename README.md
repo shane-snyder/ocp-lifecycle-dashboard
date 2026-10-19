@@ -33,12 +33,14 @@ You choose how those metrics reach Grafana. There are three ready-made options.
 | Installs with | `oc apply -k` on each cluster | `oc apply -k` on each cluster | One ACM Policy on the hub, rolled out to every selected cluster |
 | You need | User workload monitoring enabled, or nothing if you use the platform variant | The Red Hat build of OpenTelemetry operator and a metrics backend | ACM, with MultiClusterObservability enabled for the dashboard |
 | Grafana | In-cluster (Grafana Operator) or external, on Thanos Querier or a remote-write store | In-cluster or external, on your backend | ACM's built-in Grafana, ready to use, or your own Grafana on the hub's Thanos |
-| Multi-cluster view | Remote-write each cluster to one store | Built in: each collector labels its cluster | Built in |
+| Multi-cluster view | Remote-write each cluster to one store | Built in: clusters are told apart by `k8s_cluster_name` | Built in |
 | Alerts | Yes, through OpenShift alerting | Not included: load the rules into your backend | Yes, forwarded to the hub's Alertmanager |
 
 Each option is a directory under [`deploy/`](deploy). All of them share the
-same exporter manifests ([`deploy/base`](deploy/base)) and the same dashboard
-([`dashboards/ocp-lifecycle.json`](dashboards/ocp-lifecycle.json)).
+same exporter manifests ([`deploy/base`](deploy/base)) and the same dashboard:
+[`dashboards/ocp-lifecycle.json`](dashboards/ocp-lifecycle.json), or
+[`ocp-lifecycle-otel.json`](dashboards/ocp-lifecycle-otel.json) for option 2,
+which selects clusters by OpenTelemetry's `k8s_cluster_name`.
 
 ### Requirements for every option
 
@@ -109,34 +111,54 @@ Cluster selector stays on **All**.
 ## Option 2: Red Hat build of OpenTelemetry
 
 An OpenTelemetry collector in the `ocp-lifecycle` namespace scrapes the
-exporter and pushes the metrics to your backend. It adds a `cluster` label as
-it does so. OpenShift monitoring isn't involved.
+exporter and pushes the metrics to your backend. OpenShift monitoring isn't
+involved.
+
+Clusters are identified the OpenTelemetry way. The collector's resource
+detection sets `k8s.cluster.name`, which Prometheus-style backends expose as the
+`k8s_cluster_name` label. This option therefore has its own dashboard,
+[`dashboards/ocp-lifecycle-otel.json`](dashboards/ocp-lifecycle-otel.json). It's
+identical to the main one except that its Cluster selector uses
+`k8s_cluster_name` instead of `cluster`.
 
 1. Install the **Red Hat build of OpenTelemetry** operator from OperatorHub.
-2. Edit [`deploy/option-2-opentelemetry/opentelemetry-collector.yaml`](deploy/option-2-opentelemetry/opentelemetry-collector.yaml)
-   at the two `CHANGE ME` lines:
-   - **`cluster`:** a unique name for this cluster.
-   - **The exporter endpoint:** your backend's address, plus any auth header or tenant header.
+2. Edit [`deploy/option-2-opentelemetry/opentelemetry-collector.yaml`](deploy/option-2-opentelemetry/opentelemetry-collector.yaml):
+   - **The exporter endpoint (`CHANGE ME`):** your backend's address, plus any
+     auth or tenant header. It uses OTLP/HTTP, which Prometheus 3 (with
+     `--web.enable-otlp-receiver`; endpoint `http://<prometheus>:9090/api/v1/otlp`),
+     Mimir, Thanos Receive and Grafana Cloud all accept. A
+     `prometheusremotewrite` exporter is included, commented out.
+   - **Optional, the cluster name:** by default it's the cluster's
+     infrastructure name (e.g. `mycluster-x7k2p`). For a friendlier one, set
+     `OTEL_RESOURCE_ATTRIBUTES=k8s.cluster.name=<name>` in the collector's `env`.
 
-   It uses OTLP/HTTP, which Prometheus 3 (with `--web.enable-otlp-receiver`;
-   endpoint `http://<prometheus>:9090/api/v1/otlp`), Mimir, Thanos Receive and
-   Grafana Cloud all accept. A `prometheusremotewrite` exporter is included,
-   commented out. Check the Red Hat build of OpenTelemetry release notes for the
-   support level of the `prometheus` receiver and the exporter you choose.
-3. Deploy:
+   Check the Red Hat build of OpenTelemetry release notes for the support level
+   of the `prometheus` receiver and the exporter you choose.
+3. Make sure the backend turns `k8s.cluster.name` into a label. Most keep
+   resource attributes out of series labels unless told to promote them:
+
+   | Backend | Setting |
+   |---|---|
+   | Prometheus 3 | `otlp: { promote_resource_attributes: [k8s.cluster.name] }` in `prometheus.yml` |
+   | Mimir | `limits.promote_otel_resource_attributes: "k8s.cluster.name"` |
+   | Can't promote | Add the included `transform/cluster` processor to the collector's pipeline. It copies the name onto every data point. Use either this or promotion, not both. |
+
+4. Deploy:
    ```sh
    oc apply -k deploy/option-2-opentelemetry
    ```
-4. Connect Grafana to your backend:
+5. Connect Grafana to your backend:
    - **Grafana Operator:** set the URL in
      [`grafana-operator/datasource.yaml`](deploy/option-2-opentelemetry/grafana-operator/datasource.yaml)
      and the namespace and selector in its `kustomization.yaml`, then run
-     `oc apply -k deploy/option-2-opentelemetry/grafana-operator`.
+     `oc apply -k deploy/option-2-opentelemetry/grafana-operator`. This installs
+     the OpenTelemetry dashboard.
    - **Any other Grafana:** add a Prometheus data source for the backend and
-     import [`dashboards/ocp-lifecycle.json`](dashboards/ocp-lifecycle.json).
+     import [`dashboards/ocp-lifecycle-otel.json`](dashboards/ocp-lifecycle-otel.json).
 
-Repeat steps 2 and 3 on every cluster with a different `cluster` value. The
-metric names arrive unchanged (verified with Prometheus' OTLP receiver).
+Repeat steps 2 and 4 on every cluster. Each one reports under its own
+`k8s_cluster_name`. The metric names arrive unchanged (verified with
+Prometheus' OTLP receiver and with Mimir).
 
 Alerts: [`deploy/components/alerts/prometheusrule.yaml`](deploy/components/alerts/prometheusrule.yaml)
 holds the rule expressions. Load them into your backend's ruler if you want alerts.
@@ -278,8 +300,9 @@ patches:
 ## Metrics
 
 All gauges, prefixed `ocp_lifecycle_`. Operator series are keyed by
-`operator_namespace` and `package`. The `cluster` label comes from the
-collection path (ACM, OTel, or remote-write external labels), not from the exporter.
+`operator_namespace` and `package`. The cluster label comes from the
+collection path, not from the exporter: `cluster` from ACM or remote-write
+external labels, `k8s_cluster_name` from OpenTelemetry.
 
 | Metric | Labels | Value |
 |---|---|---|

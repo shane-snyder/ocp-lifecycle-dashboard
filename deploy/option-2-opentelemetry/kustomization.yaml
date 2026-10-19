@@ -7,4 +7,5 @@ kind: Kustomization
 
 resources:
   - ../base
+  - collector-rbac.yaml
   - opentelemetry-collector.yaml

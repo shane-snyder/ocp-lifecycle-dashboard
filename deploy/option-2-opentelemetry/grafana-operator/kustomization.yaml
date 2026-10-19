@@ -12,7 +12,7 @@ namespace: grafana
 
 resources:
   - datasource.yaml
-  - ../../grafana-dashboard
+  - grafana-dashboard.yaml
 
 patches:
   - target:
