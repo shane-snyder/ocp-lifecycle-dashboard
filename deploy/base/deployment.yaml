@@ -1,0 +1,58 @@
+# One replica is enough: a restart only costs one lifecycle API fetch, and
+# two replicas would just double the series.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ocp-lifecycle-exporter
+  namespace: ocp-lifecycle
+  labels:
+    app.kubernetes.io/name: ocp-lifecycle-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ocp-lifecycle-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ocp-lifecycle-exporter
+    spec:
+      serviceAccountName: ocp-lifecycle-exporter
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: exporter
+          # Override with `kustomize edit set image` (see README) to use your
+          # own registry or pin a digest.
+          image: quay.io/rh_ee_ssnyder/ocp-lifecycle-dashboard:latest
+          imagePullPolicy: Always
+          env:
+            # Red Hat API every 4h (retried every 5m on failure); the cluster's
+            # own Subscriptions every 10m so operator upgrades show up quickly.
+            - { name: POLL_INTERVAL_SECONDS, value: "14400" }
+            - { name: CLUSTER_REFRESH_SECONDS, value: "600" }
+            # Flag support ending within this many days.
+            - { name: WARN_DAYS, value: "90" }
+            # The target OpenShift minor is read from the update channel
+            # (eus-4.22 -> 4.22). Set this to plan against a different one.
+            # - { name: TARGET_OCP_VERSION, value: "4.22" }
+            # Extra package -> lifecycle product mappings, ";"-separated.
+            # - { name: PACKAGE_PRODUCT_OVERRIDES, value: "my-pkg=Product Name" }
+            # Behind an egress proxy, also set HTTPS_PROXY / NO_PROXY.
+          ports:
+            - { name: metrics, containerPort: 9120 }
+          readinessProbe:
+            httpGet: { path: /readyz, port: metrics }
+            periodSeconds: 30
+          livenessProbe:
+            httpGet: { path: /healthz, port: metrics }
+            initialDelaySeconds: 10
+            periodSeconds: 60
+          resources:
+            requests: { cpu: 10m, memory: 64Mi }
+            limits: { cpu: 500m, memory: 256Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }

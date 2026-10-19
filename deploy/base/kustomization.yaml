@@ -1,0 +1,14 @@
+# The exporter alone: no scraping, no alerts. Each deployment option adds the
+# piece that collects its metrics.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - namespace.yaml
+  - rbac.yaml
+  - deployment.yaml
+  - service.yaml
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: ocp-lifecycle

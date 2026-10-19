@@ -1,0 +1,13 @@
+# Grafana outside this cluster (or not managed by the Grafana Operator): a
+# read-only service account and a long-lived token for Thanos Querier's route.
+#
+#   oc apply -k deploy/option-1-openshift-monitoring/grafana-reader
+#   oc -n ocp-lifecycle extract secret/ocp-lifecycle-grafana-token --keys=token --to=-
+#   oc -n openshift-monitoring get route thanos-querier -o jsonpath='{.spec.host}'
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: ocp-lifecycle
+
+resources:
+  - reader.yaml

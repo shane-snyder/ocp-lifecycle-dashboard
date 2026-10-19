@@ -1,0 +1,39 @@
+# The service CA signs Thanos Querier's in-cluster certificate; OpenShift
+# injects it into this ConfigMap.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ocp-lifecycle-service-ca
+  annotations:
+    service.beta.openshift.io/inject-cabundle: "true"
+---
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: ocp-lifecycle
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  valuesFrom:
+    - targetPath: secureJsonData.httpHeaderValue1
+      valueFrom:
+        secretKeyRef: { name: ocp-lifecycle-grafana-token, key: token }
+    - targetPath: secureJsonData.tlsCACert
+      valueFrom:
+        configMapKeyRef: { name: ocp-lifecycle-service-ca, key: service-ca.crt }
+  datasource:
+    # The dashboard selects this uid by default.
+    uid: ocp-lifecycle
+    name: OpenShift Monitoring
+    type: prometheus
+    access: proxy
+    url: https://thanos-querier.openshift-monitoring.svc.cluster.local:9091
+    jsonData:
+      httpMethod: POST
+      timeInterval: 2m
+      tlsAuthWithCACert: true
+      httpHeaderName1: Authorization
+    secureJsonData:
+      httpHeaderValue1: "Bearer ${token}"
+      tlsCACert: "${service-ca.crt}"

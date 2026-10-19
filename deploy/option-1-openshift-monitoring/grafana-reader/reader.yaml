@@ -1,0 +1,27 @@
+# Lets Grafana query the cluster's Thanos Querier, which serves both platform
+# and user workload metrics. cluster-monitoring-view is read-only.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ocp-lifecycle-grafana
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: ocp-lifecycle-grafana-token
+  annotations:
+    kubernetes.io/service-account.name: ocp-lifecycle-grafana
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ocp-lifecycle-grafana-cluster-monitoring-view
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-monitoring-view
+subjects:
+  - kind: ServiceAccount
+    name: ocp-lifecycle-grafana
+    namespace: ocp-lifecycle

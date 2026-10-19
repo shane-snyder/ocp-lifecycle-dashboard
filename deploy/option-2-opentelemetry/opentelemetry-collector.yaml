@@ -1,0 +1,55 @@
+# Scrapes the exporter and forwards its series to your metrics backend. Needs
+# the Red Hat build of OpenTelemetry operator.
+#
+# Edit the two values marked CHANGE ME: this cluster's name and your backend.
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: ocp-lifecycle
+  namespace: ocp-lifecycle
+spec:
+  mode: deployment
+  replicas: 1
+  resources:
+    requests: { cpu: 10m, memory: 64Mi }
+    limits: { cpu: 500m, memory: 256Mi }
+  config:
+    receivers:
+      prometheus:
+        config:
+          scrape_configs:
+            - job_name: ocp-lifecycle-exporter
+              scrape_interval: 2m
+              scrape_timeout: 30s
+              static_configs:
+                - targets: ["ocp-lifecycle-exporter.ocp-lifecycle.svc:9120"]
+                  labels:
+                    # The dashboard's Cluster selector. CHANGE ME: unique per cluster.
+                    cluster: my-cluster
+
+    processors:
+      memory_limiter:
+        check_interval: 5s
+        limit_percentage: 75
+        spike_limit_percentage: 20
+      batch: {}
+
+    exporters:
+      # OTLP over HTTP, accepted by Prometheus 3 (--web.enable-otlp-receiver),
+      # Mimir, Thanos Receive, Grafana Cloud and most other backends.
+      # CHANGE ME: the endpoint (the collector appends /v1/metrics).
+      otlphttp:
+        endpoint: https://metrics.example.com/otlp
+        # headers:
+        #   Authorization: "Bearer ${env:BACKEND_TOKEN}"
+        #   X-Scope-OrgID: my-tenant
+      # Or Prometheus remote write; swap it into the pipeline below.
+      # prometheusremotewrite:
+      #   endpoint: https://metrics.example.com/api/v1/push
+
+    service:
+      pipelines:
+        metrics:
+          receivers: [prometheus]
+          processors: [memory_limiter, batch]
+          exporters: [otlphttp]

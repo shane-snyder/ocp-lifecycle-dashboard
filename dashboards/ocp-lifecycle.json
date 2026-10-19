@@ -1,0 +1,2091 @@
+{
+  "uid": "ocp-lifecycle",
+  "title": "OpenShift & operator lifecycle",
+  "description": "Red Hat product lifecycle for each cluster's OpenShift version and installed operators: support phase, end dates, and OpenShift compatibility. Fed by ocp-lifecycle-exporter.",
+  "tags": [
+    "lifecycle",
+    "openshift",
+    "operators"
+  ],
+  "timezone": "utc",
+  "editable": true,
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5m",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "graphTooltip": 0,
+  "links": [
+    {
+      "title": "Red Hat product lifecycles",
+      "type": "link",
+      "targetBlank": true,
+      "url": "https://access.redhat.com/product-life-cycles"
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "datasource",
+        "label": "Data source",
+        "type": "datasource",
+        "query": "prometheus",
+        "current": {},
+        "hide": 0,
+        "description": "Any Prometheus-compatible source holding the ocp_lifecycle_* series."
+      },
+      {
+        "name": "cluster",
+        "label": "Cluster",
+        "type": "query",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${datasource}"
+        },
+        "query": {
+          "query": "label_values(ocp_lifecycle_cluster_info, cluster)",
+          "refId": "cluster"
+        },
+        "definition": "label_values(ocp_lifecycle_cluster_info, cluster)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "allValue": ".*",
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "sort": 1,
+        "hide": 0
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "row",
+      "title": "Fleet summary",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Clusters reporting",
+      "description": "Clusters with a running lifecycle exporter.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 1,
+        "w": 4,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "count(ocp_lifecycle_cluster_info{cluster=~\"$cluster\"})",
+          "refId": "A",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Operators: action required",
+      "description": "Installed operator versions that are end of life or do not support the cluster's current OpenShift version.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 1,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "count(ocp_lifecycle_operator_status{cluster=~\"$cluster\"} == 2)",
+          "refId": "A",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "red"
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Operators: plan an update",
+      "description": "Installed operator versions that block the update channel's target OpenShift version, or whose support ends soon.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 9,
+        "y": 1,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "count(ocp_lifecycle_operator_status{cluster=~\"$cluster\"} == 1)",
+          "refId": "A",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Operators: OK",
+      "description": "Supported, and compatible with both the current and target OpenShift version.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 14,
+        "y": 1,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "count(ocp_lifecycle_operator_status{cluster=~\"$cluster\"} == 0)",
+          "refId": "A",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Not tracked by Red Hat",
+      "description": "Community/certified operators with no Red Hat lifecycle entry, or a version the lifecycle data does not list.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 19,
+        "y": 1,
+        "w": 5,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "count(ocp_lifecycle_operator_status{cluster=~\"$cluster\"} == -1)",
+          "refId": "A",
+          "legendFormat": "",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "noValue": "0"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 7,
+      "type": "table",
+      "title": "Clusters",
+      "description": "Each cluster's OpenShift version, the minor its update channel targets, and where that minor is in the Red Hat lifecycle.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 5,
+        "w": 24,
+        "h": 6
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (cluster, version, ocp_version, channel, target_ocp_version) (ocp_lifecycle_cluster_info{cluster=~\"$cluster\"})",
+          "refId": "A",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (cluster, status) (ocp_lifecycle_cluster_status{cluster=~\"$cluster\"})",
+          "refId": "B",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (cluster, phase) (ocp_lifecycle_cluster_support_phase{cluster=~\"$cluster\"})",
+          "refId": "C",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(max by (cluster) (ocp_lifecycle_cluster_current_phase_end_timestamp_seconds{cluster=~\"$cluster\"}) + 43200) * 1000",
+          "refId": "D",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (cluster) ((ocp_lifecycle_cluster_current_phase_end_timestamp_seconds{cluster=~\"$cluster\"} - time()) / 86400)",
+          "refId": "E",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(max by (cluster) (ocp_lifecycle_cluster_support_end_timestamp_seconds{cluster=~\"$cluster\"}) + 43200) * 1000",
+          "refId": "F",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(max by (cluster) (ocp_lifecycle_cluster_extended_support_end_timestamp_seconds{cluster=~\"$cluster\"}) + 43200) * 1000",
+          "refId": "G",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "count by (cluster) (ocp_lifecycle_operator_status{cluster=~\"$cluster\"} == 2)",
+          "refId": "H",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "count by (cluster) (ocp_lifecycle_operator_status{cluster=~\"$cluster\"} == 1)",
+          "refId": "I",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value #A": true,
+              "status": true
+            },
+            "renameByName": {
+              "cluster": "Cluster",
+              "version": "Version",
+              "ocp_version": "Minor",
+              "channel": "Channel",
+              "target_ocp_version": "Channel target",
+              "Value #B": "Status",
+              "phase": "Phase",
+              "Value #C": "Support level",
+              "Value #D": "Phase ends",
+              "Value #E": "Days left in phase",
+              "Value #F": "Standard support ends",
+              "Value #G": "Extended support ends",
+              "Value #H": "Operators: action",
+              "Value #I": "Operators: plan"
+            },
+            "indexByName": {
+              "cluster": 0,
+              "version": 1,
+              "ocp_version": 2,
+              "channel": 3,
+              "target_ocp_version": 4,
+              "Value #B": 5,
+              "Value #C": 6,
+              "phase": 7,
+              "Value #D": 8,
+              "Value #E": 9,
+              "Value #F": 10,
+              "Value #G": 11,
+              "Value #H": 12,
+              "Value #I": 13
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "2": {
+                        "text": "Action required",
+                        "color": "red",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "Plan update",
+                        "color": "orange",
+                        "index": 1
+                      },
+                      "0": {
+                        "text": "OK",
+                        "color": "green",
+                        "index": 2
+                      },
+                      "-1": {
+                        "text": "Not tracked",
+                        "color": "text",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 130
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Support level"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "3": {
+                        "text": "Full support",
+                        "color": "green",
+                        "index": 0
+                      },
+                      "2": {
+                        "text": "Maintenance",
+                        "color": "blue",
+                        "index": 1
+                      },
+                      "1": {
+                        "text": "Extended (EUS)",
+                        "color": "orange",
+                        "index": 2
+                      },
+                      "0": {
+                        "text": "End of life",
+                        "color": "red",
+                        "index": 3
+                      },
+                      "-1": {
+                        "text": "Unknown",
+                        "color": "text",
+                        "index": 4
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 140
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Phase ends"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:YYYY-MM-DD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Standard support ends"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:YYYY-MM-DD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Extended support ends"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:YYYY-MM-DD"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Days left in phase"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Operators: action"
+            },
+            "properties": [
+              {
+                "id": "noValue",
+                "value": "0"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    },
+                    {
+                      "color": "red",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Operators: plan"
+            },
+            "properties": [
+              {
+                "id": "noValue",
+                "value": "0"
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "text",
+                      "value": null
+                    },
+                    {
+                      "color": "orange",
+                      "value": 1
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "sortBy": [
+          {
+            "displayName": "Cluster",
+            "desc": false
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "type": "row",
+      "title": "Installed operators",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 11,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 9,
+      "type": "table",
+      "title": "Operators",
+      "description": "Every OLM Subscription joined against the Red Hat lifecycle. Sorted worst first. \"For current OCP\" / \"For target OCP\" are the newest supported operator versions compatible with the cluster's current minor and with its update channel's target.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 24,
+        "h": 16
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (cluster, operator_namespace, package, product, installed_version, lifecycle_version, channel, phase, compatible_ocp_versions, link) (ocp_lifecycle_operator_info{cluster=~\"$cluster\"})",
+          "refId": "A",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (cluster, operator_namespace, package, status, reasons) (ocp_lifecycle_operator_status{cluster=~\"$cluster\"})",
+          "refId": "B",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (cluster, operator_namespace, package) (ocp_lifecycle_operator_support_phase{cluster=~\"$cluster\"})",
+          "refId": "C",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (cluster, operator_namespace, package) (ocp_lifecycle_operator_compatible_with_cluster{cluster=~\"$cluster\"})",
+          "refId": "D",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (cluster, operator_namespace, package) (ocp_lifecycle_operator_compatible_with_target{cluster=~\"$cluster\"})",
+          "refId": "E",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(max by (cluster, operator_namespace, package) (ocp_lifecycle_operator_support_end_timestamp_seconds{cluster=~\"$cluster\"}) + 43200) * 1000",
+          "refId": "F",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (cluster, operator_namespace, package, recommended_version) (ocp_lifecycle_operator_recommended_version_info{cluster=~\"$cluster\", for=\"current\"})",
+          "refId": "G",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (cluster, operator_namespace, package, target_version) (label_replace(ocp_lifecycle_operator_recommended_version_info{cluster=~\"$cluster\", for=\"target\"}, \"target_version\", \"$1\", \"recommended_version\", \"(.*)\"))",
+          "refId": "H",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value #A": true,
+              "Value #G": true,
+              "Value #H": true,
+              "phase": true
+            },
+            "renameByName": {
+              "cluster": "Cluster",
+              "package": "Package",
+              "operator_namespace": "Namespace",
+              "installed_version": "Installed",
+              "lifecycle_version": "Lifecycle stream",
+              "channel": "Channel",
+              "Value #B": "Status",
+              "status": "Finding",
+              "reasons": "All findings",
+              "phase": "Phase",
+              "Value #C": "Support level",
+              "Value #D": "Supports current OCP",
+              "Value #E": "Supports target OCP",
+              "compatible_ocp_versions": "Compatible OCP versions",
+              "Value #F": "Support ends",
+              "recommended_version": "For current OCP",
+              "target_version": "For target OCP",
+              "product": "Product"
+            },
+            "indexByName": {
+              "cluster": 0,
+              "package": 1,
+              "operator_namespace": 2,
+              "installed_version": 3,
+              "lifecycle_version": 4,
+              "channel": 5,
+              "Value #B": 6,
+              "status": 7,
+              "Value #C": 8,
+              "phase": 9,
+              "Value #D": 10,
+              "Value #E": 11,
+              "compatible_ocp_versions": 12,
+              "Value #F": 13,
+              "recommended_version": 14,
+              "target_version": 15,
+              "product": 16,
+              "reasons": 17,
+              "link": 18
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Status",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "2": {
+                        "text": "Action required",
+                        "color": "red",
+                        "index": 0
+                      },
+                      "1": {
+                        "text": "Plan update",
+                        "color": "orange",
+                        "index": 1
+                      },
+                      "0": {
+                        "text": "OK",
+                        "color": "green",
+                        "index": 2
+                      },
+                      "-1": {
+                        "text": "Not tracked",
+                        "color": "text",
+                        "index": 3
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 130
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Finding"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "end_of_life": {
+                        "text": "End of life",
+                        "index": 0
+                      },
+                      "incompatible_with_cluster": {
+                        "text": "Doesn't support current OCP",
+                        "index": 1
+                      },
+                      "blocks_cluster_upgrade": {
+                        "text": "Blocks upgrade to target OCP",
+                        "index": 2
+                      },
+                      "support_ending_soon": {
+                        "text": "Support ends soon",
+                        "index": 3
+                      },
+                      "update_with_cluster": {
+                        "text": "Update alongside OCP",
+                        "index": 4
+                      },
+                      "newer_version_available": {
+                        "text": "Newer version available",
+                        "index": 5
+                      },
+                      "unknown_version": {
+                        "text": "Version not in lifecycle data",
+                        "index": 6
+                      },
+                      "not_tracked": {
+                        "text": "No Red Hat lifecycle",
+                        "index": 7
+                      },
+                      "ok": {
+                        "text": "OK",
+                        "index": 8
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 230
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Package"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 260
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Support level"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "3": {
+                        "text": "Full support",
+                        "color": "green",
+                        "index": 0
+                      },
+                      "2": {
+                        "text": "Maintenance",
+                        "color": "blue",
+                        "index": 1
+                      },
+                      "1": {
+                        "text": "Extended (EUS)",
+                        "color": "orange",
+                        "index": 2
+                      },
+                      "0": {
+                        "text": "End of life",
+                        "color": "red",
+                        "index": 3
+                      },
+                      "-1": {
+                        "text": "Unknown",
+                        "color": "text",
+                        "index": 4
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 130
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Supports current OCP"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "Yes",
+                        "color": "green",
+                        "index": 0
+                      },
+                      "0": {
+                        "text": "No",
+                        "color": "red",
+                        "index": 1
+                      },
+                      "-1": {
+                        "text": "Unknown",
+                        "color": "text",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Supports target OCP"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "1": {
+                        "text": "Yes",
+                        "color": "green",
+                        "index": 0
+                      },
+                      "0": {
+                        "text": "No",
+                        "color": "red",
+                        "index": 1
+                      },
+                      "-1": {
+                        "text": "Unknown",
+                        "color": "text",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Support ends"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:YYYY-MM-DD"
+              },
+              {
+                "id": "custom.width",
+                "value": 110
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "link"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Product"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Red Hat lifecycle policy",
+                    "url": "${__data.fields.link}",
+                    "targetBlank": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "sortBy": []
+      }
+    },
+    {
+      "id": 10,
+      "type": "bargauge",
+      "title": "Operator support remaining (soonest first)",
+      "description": "Days until standard support ends for each installed operator version. Negative means already past.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sort(bottomk(15, max by (cluster, package) ((ocp_lifecycle_operator_support_end_timestamp_seconds{cluster=~\"$cluster\"} - time()) / 86400)))",
+          "refId": "A",
+          "legendFormat": "{{package}} {{cluster}}",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: days",
+          "decimals": 0,
+          "min": 0,
+          "max": 365,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 30
+              },
+              {
+                "color": "yellow",
+                "value": 90
+              },
+              {
+                "color": "green",
+                "value": 180
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "left",
+        "sizing": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 11,
+      "type": "bargauge",
+      "title": "OpenShift: days left in current phase",
+      "description": "Days until each cluster's OpenShift minor leaves its current support phase.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 28,
+        "w": 12,
+        "h": 10
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (cluster, ocp_version, phase) ((ocp_lifecycle_cluster_current_phase_end_timestamp_seconds{cluster=~\"$cluster\"} - time()) / 86400)",
+          "refId": "A",
+          "legendFormat": "{{cluster}} {{ocp_version}} – {{phase}}",
+          "instant": true,
+          "range": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "suffix: days",
+          "decimals": 0,
+          "min": 0,
+          "max": 365,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 30
+              },
+              {
+                "color": "yellow",
+                "value": 90
+              },
+              {
+                "color": "green",
+                "value": 180
+              }
+            ]
+          },
+          "color": {
+            "mode": "thresholds"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "valueMode": "text",
+        "namePlacement": "left",
+        "sizing": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 12,
+      "type": "row",
+      "title": "OpenShift compatibility matrix",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 13,
+      "type": "table",
+      "title": "Operator × OpenShift compatibility – $cluster",
+      "description": "Which OpenShift minors the installed version of each operator supports, per Red Hat. Compare against this cluster's current minor and its update channel's target (Clusters table above). Untracked operators are not listed.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 39,
+        "w": 24,
+        "h": 14
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (package, lifecycle_version, ocp_version) (ocp_lifecycle_operator_ocp_compatibility{cluster=~\"$cluster\"})",
+          "refId": "A",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "ocp_version",
+            "rowField": "package",
+            "valueField": "Value",
+            "emptyValue": "null"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "package\\ocp_version": "Operator"
+            },
+            "indexByName": {
+              "package\\ocp_version": 0,
+              "4.1": 1,
+              "4.2": 2,
+              "4.3": 3,
+              "4.4": 4,
+              "4.5": 5,
+              "4.6": 6,
+              "4.7": 7,
+              "4.8": 8,
+              "4.9": 9,
+              "4.10": 10,
+              "4.11": 11,
+              "4.12": 12,
+              "4.13": 13,
+              "4.14": 14,
+              "4.15": 15,
+              "4.16": 16,
+              "4.17": 17,
+              "4.18": 18,
+              "4.19": 19,
+              "4.20": 20,
+              "4.21": 21,
+              "4.22": 22,
+              "4.23": 23,
+              "4.24": 24,
+              "4.25": 25,
+              "4.26": 26,
+              "4.27": 27,
+              "4.28": 28,
+              "4.29": 29,
+              "5.0": 30,
+              "5.1": 31,
+              "5.2": 32,
+              "5.3": 33,
+              "5.4": 34,
+              "5.5": 35,
+              "5.6": 36,
+              "5.7": 37,
+              "5.8": 38,
+              "5.9": 39,
+              "5.10": 40,
+              "5.11": 41,
+              "5.12": 42,
+              "5.13": 43,
+              "5.14": 44,
+              "5.15": 45,
+              "5.16": 46,
+              "5.17": 47,
+              "5.18": 48,
+              "5.19": 49
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "center",
+            "filterable": false,
+            "cellOptions": {
+              "type": "color-background",
+              "mode": "basic"
+            }
+          },
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "1": {
+                  "text": "✓",
+                  "color": "green",
+                  "index": 0
+                }
+              }
+            },
+            {
+              "type": "special",
+              "options": {
+                "match": "null",
+                "result": {
+                  "text": "–",
+                  "color": "transparent",
+                  "index": 1
+                }
+              }
+            }
+          ],
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Operator"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 280
+              },
+              {
+                "id": "custom.align",
+                "value": "left"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "sortBy": [
+          {
+            "displayName": "Operator",
+            "desc": false
+          }
+        ]
+      },
+      "repeat": "cluster",
+      "repeatDirection": "v"
+    },
+    {
+      "id": 14,
+      "type": "row",
+      "title": "OpenShift lifecycle",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 53,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
+    },
+    {
+      "id": 15,
+      "type": "table",
+      "title": "OpenShift minors: current phase",
+      "description": "Every supported OpenShift minor, plus any minor a cluster is running or targeting.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 54,
+        "w": 8,
+        "h": 10
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "max by (ocp_version, phase) (ocp_lifecycle_ocp_version_support_phase{cluster=~\"$cluster\"})",
+          "refId": "A",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(max by (ocp_version) (ocp_lifecycle_ocp_version_support_end_timestamp_seconds{cluster=~\"$cluster\"}) + 43200) * 1000",
+          "refId": "B",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "renameByName": {
+              "ocp_version": "Minor",
+              "phase": "Phase",
+              "Value #A": "Support level",
+              "Value #B": "Standard support ends"
+            },
+            "indexByName": {
+              "ocp_version": 0,
+              "Value #A": 1,
+              "phase": 2,
+              "Value #B": 3
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Support level"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "3": {
+                        "text": "Full support",
+                        "color": "green",
+                        "index": 0
+                      },
+                      "2": {
+                        "text": "Maintenance",
+                        "color": "blue",
+                        "index": 1
+                      },
+                      "1": {
+                        "text": "Extended (EUS)",
+                        "color": "orange",
+                        "index": 2
+                      },
+                      "0": {
+                        "text": "End of life",
+                        "color": "red",
+                        "index": 3
+                      },
+                      "-1": {
+                        "text": "Unknown",
+                        "color": "text",
+                        "index": 4
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "basic"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Standard support ends"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "time:YYYY-MM-DD"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "sortBy": [
+          {
+            "displayName": "Minor",
+            "desc": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "type": "table",
+      "title": "OpenShift minors: phase end dates",
+      "description": "Published end date of each lifecycle phase. Empty where the phase does not apply (e.g. EUS on odd minors).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 54,
+        "w": 16,
+        "h": 10
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "(max by (ocp_version, phase) (ocp_lifecycle_ocp_version_phase_end_timestamp_seconds{cluster=~\"$cluster\"}) + 43200) * 1000",
+          "refId": "A",
+          "legendFormat": "",
+          "instant": true,
+          "range": false,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "groupingToMatrix",
+          "options": {
+            "columnField": "phase",
+            "rowField": "ocp_version",
+            "valueField": "Value",
+            "emptyValue": "null"
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "renameByName": {
+              "ocp_version\\phase": "Minor"
+            },
+            "indexByName": {
+              "ocp_version\\phase": 0,
+              "Full support": 1,
+              "Maintenance support": 2,
+              "Extended update support": 3,
+              "Extended update support Term 2": 4,
+              "Extended update support Term 3": 5,
+              "Extended life phase": 6
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          },
+          "unit": "time:YYYY-MM-DD",
+          "noValue": "–"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Minor"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "string"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        },
+        "sortBy": [
+          {
+            "displayName": "Minor",
+            "desc": true
+          }
+        ]
+      }
+    },
+    {
+      "id": 20,
+      "type": "row",
+      "title": "Exporter health",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 64,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 17,
+          "type": "stat",
+          "title": "Lifecycle data age",
+          "description": "Oldest successful Red Hat API fetch across the selected clusters. Refreshes every 4h.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 0,
+            "y": 65,
+            "w": 8,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "max(time() - ocp_lifecycle_api_last_success_timestamp_seconds{cluster=~\"$cluster\"})",
+              "refId": "A",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "text"
+              },
+              "noValue": "0"
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center"
+          }
+        },
+        {
+          "id": 18,
+          "type": "stat",
+          "title": "Cluster data age",
+          "description": "Oldest successful read of ClusterVersion/Subscriptions. Refreshes every 10m.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 8,
+            "y": 65,
+            "w": 8,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "max(time() - ocp_lifecycle_cluster_last_success_timestamp_seconds{cluster=~\"$cluster\"})",
+              "refId": "A",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "text"
+              },
+              "noValue": "0"
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "value",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center"
+          }
+        },
+        {
+          "id": 19,
+          "type": "stat",
+          "title": "Clusters with stale data",
+          "description": "Clusters whose exporter has not reached access.redhat.com in 24h.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "x": 16,
+            "y": 65,
+            "w": 8,
+            "h": 4
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "count((time() - ocp_lifecycle_api_last_success_timestamp_seconds{cluster=~\"$cluster\"}) > 86400)",
+              "refId": "A",
+              "legendFormat": "",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "none",
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "red"
+              },
+              "noValue": "0"
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "none",
+            "textMode": "value",
+            "justifyMode": "center"
+          }
+        }
+      ]
+    }
+  ]
+}

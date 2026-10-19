@@ -1,0 +1,34 @@
+# EXAMPLE, do not apply as-is: merge into your existing ConfigMap, which holds
+# other platform monitoring settings. For the platform-monitoring component.
+#
+#   oc -n openshift-monitoring edit configmap cluster-monitoring-config
+#
+# Sends only the ocp_lifecycle_* series to any Prometheus remote-write
+# receiver (Prometheus with --web.enable-remote-write-receiver, Thanos
+# Receive, Mimir, Cortex, Grafana Cloud...). externalLabels gives every
+# cluster's series a distinct `cluster` label for the dashboard's selector.
+# It also applies to platform alerts; leave it out if ACM observability
+# already labels this cluster (use option 3 instead).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cluster-monitoring-config
+  namespace: openshift-monitoring
+data:
+  config.yaml: |
+    prometheusK8s:
+      externalLabels:
+        cluster: my-cluster            # unique per cluster
+      remoteWrite:
+        - url: https://metrics.example.com/api/v1/push
+          # Credentials come from a Secret in openshift-monitoring:
+          # authorization:
+          #   type: Bearer
+          #   credentials: { name: remote-write-token, key: token }
+          # basicAuth:
+          #   username: { name: remote-write-auth, key: user }
+          #   password: { name: remote-write-auth, key: password }
+          writeRelabelConfigs:
+            - sourceLabels: [__name__]
+              regex: ocp_lifecycle_.*
+              action: keep

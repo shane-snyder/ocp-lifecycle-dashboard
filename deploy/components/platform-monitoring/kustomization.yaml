@@ -1,0 +1,22 @@
+# Scraped by the platform Prometheus in openshift-monitoring. No
+# prerequisites, and it is the source ACM observability collects from by
+# default. The namespace label is the one OpenShift's own namespaces use; for
+# your own workloads Red Hat's supported path is user-workload-monitoring.
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - prometheus-rbac.yaml
+  - servicemonitor.yaml
+
+components:
+  - ../alerts
+
+patches:
+  - target:
+      kind: Namespace
+      name: ocp-lifecycle
+    patch: |-
+      - op: add
+        path: /metadata/labels/openshift.io~1cluster-monitoring
+        value: "true"

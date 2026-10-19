@@ -1,0 +1,39 @@
+# Grafana running in this cluster, managed by the Grafana Operator: a data
+# source on Thanos Querier and the dashboard.
+#
+#   oc apply -k deploy/option-1-openshift-monitoring/grafana-operator
+#
+# Set `namespace` to your Grafana's namespace and, if your Grafana CR is not
+# labelled dashboards=grafana, change the instanceSelector patch below.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: grafana
+
+resources:
+  - ../grafana-reader
+  - datasource.yaml
+  - ../../grafana-dashboard
+
+patches:
+  - target:
+      group: grafana.integreatly.org
+    patch: |-
+      - op: replace
+        path: /spec/instanceSelector
+        value:
+          matchLabels:
+            dashboards: grafana
+
+# Point the ClusterRoleBinding at the service account in this namespace.
+replacements:
+  - source:
+      kind: ServiceAccount
+      name: ocp-lifecycle-grafana
+      fieldPath: metadata.namespace
+    targets:
+      - select:
+          kind: ClusterRoleBinding
+          name: ocp-lifecycle-grafana-cluster-monitoring-view
+        fieldPaths:
+          - subjects.0.namespace

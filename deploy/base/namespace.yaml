@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ocp-lifecycle
+  annotations:
+    openshift.io/display-name: OpenShift lifecycle exporter
+    openshift.io/description: Red Hat product lifecycle for this cluster's OpenShift version and operators

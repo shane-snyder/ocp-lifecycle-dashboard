@@ -1,0 +1,73 @@
+# Alerts on the exporter's metrics, for whichever OpenShift Prometheus scrapes
+# it (platform or user workload monitoring).
+#
+# ocp_lifecycle_operator_status: 2 critical, 1 warning, 0 ok, -1 not tracked.
+# The status label carries the headline reason, reasons= the full list.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ocp-lifecycle
+  namespace: ocp-lifecycle
+spec:
+  groups:
+    - name: ocp-lifecycle
+      rules:
+        - alert: OperatorVersionUnsupported
+          expr: ocp_lifecycle_operator_status == 2
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "{{ $labels.package }} is {{ $labels.status }}"
+            description: >-
+              Operator {{ $labels.package }} in {{ $labels.operator_namespace }} is
+              {{ $labels.status }} ({{ $labels.reasons }}) according to the Red Hat
+              product lifecycle. Update it to a version that supports this cluster.
+
+        - alert: OperatorBlocksClusterUpgrade
+          expr: ocp_lifecycle_operator_status{status="blocks_cluster_upgrade"} == 1
+          for: 1h
+          labels:
+            severity: info
+          annotations:
+            summary: "{{ $labels.package }} does not support the update channel's OpenShift version"
+            description: >-
+              The installed {{ $labels.package }} in {{ $labels.operator_namespace }}
+              does not list the cluster's update-channel target as compatible.
+              Update the operator before upgrading OpenShift.
+
+        - alert: OperatorSupportEndingSoon
+          expr: ocp_lifecycle_operator_status{status="support_ending_soon"} == 1
+          for: 1h
+          labels:
+            severity: info
+          annotations:
+            summary: "Support for the installed {{ $labels.package }} ends soon"
+            description: >-
+              Support for the installed {{ $labels.package }} in
+              {{ $labels.operator_namespace }} ends within the configured warning window.
+
+        - alert: OpenShiftVersionSupportEnding
+          expr: ocp_lifecycle_cluster_status >= 1
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: "OpenShift {{ $labels.ocp_version }} is {{ $labels.status }}"
+            description: >-
+              This cluster's OpenShift minor {{ $labels.ocp_version }} is
+              {{ $labels.status }} according to the Red Hat product lifecycle.
+
+        - alert: LifecycleDataStale
+          expr: |
+            time() - ocp_lifecycle_api_last_success_timestamp_seconds > 86400
+            or absent(ocp_lifecycle_api_last_success_timestamp_seconds)
+          for: 1h
+          labels:
+            severity: warning
+          annotations:
+            summary: Red Hat lifecycle data has not refreshed in over a day
+            description: >-
+              ocp-lifecycle-exporter has not fetched the Red Hat Product Life Cycle
+              API successfully for 24h. Check egress to access.redhat.com and the
+              exporter logs in the ocp-lifecycle namespace.

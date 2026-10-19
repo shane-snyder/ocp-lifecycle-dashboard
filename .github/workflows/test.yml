@@ -1,8 +1,5 @@
 name: Test
 
-# Images are built in-cluster and pushed to the homelab Quay
-# (ocp-homelab: components/ocp-lifecycle-exporter-pipeline). This only runs the
-# unit tests so PRs get a signal.
 on:
   push:
     branches: [main]
@@ -18,3 +15,13 @@ jobs:
         with:
           python-version: "3.12"
       - run: python -m unittest discover -s tests -t . -v
+      # Dashboards, ACM policies and allowlist are generated; fail if a
+      # source changed without regenerating them. (kubectl is preinstalled.)
+      - run: python hack/generate.py --check
+      - name: Build every kustomization
+        run: |
+          for k in $(find deploy -name kustomization.yaml -not -path '*/components/*'); do
+            echo "::group::$(dirname "$k")"
+            kubectl kustomize "$(dirname "$k")" > /dev/null
+            echo "::endgroup::"
+          done

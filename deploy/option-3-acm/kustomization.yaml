@@ -1,0 +1,18 @@
+# Option 3: Red Hat Advanced Cluster Management. Apply on the hub.
+#
+#   oc apply -k deploy/option-3-acm
+#
+# The policy installs the exporter on every placed cluster, scraped by the
+# platform Prometheus, which is what ACM observability collects from with no
+# extra setup. For user workload monitoring instead (it must be enabled on
+# every managed cluster), swap in policy-user-workload-monitoring.yaml.
+#
+# observability/ adds the series to ACM's metrics allowlist and the dashboard
+# to ACM's Grafana; it needs MultiClusterObservability on the hub.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - placement.yaml
+  - policy-platform-monitoring.yaml
+  - observability

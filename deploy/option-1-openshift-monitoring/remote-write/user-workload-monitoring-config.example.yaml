@@ -1,0 +1,32 @@
+# EXAMPLE, do not apply as-is: merge into your existing ConfigMap, which holds
+# other user workload monitoring settings.
+#
+#   oc -n openshift-user-workload-monitoring edit configmap user-workload-monitoring-config
+#
+# Sends only the ocp_lifecycle_* series to any Prometheus remote-write
+# receiver (Prometheus with --web.enable-remote-write-receiver, Thanos
+# Receive, Mimir, Cortex, Grafana Cloud...). externalLabels gives every
+# cluster's series a distinct `cluster` label for the dashboard's selector.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: user-workload-monitoring-config
+  namespace: openshift-user-workload-monitoring
+data:
+  config.yaml: |
+    prometheus:
+      externalLabels:
+        cluster: my-cluster            # unique per cluster
+      remoteWrite:
+        - url: https://metrics.example.com/api/v1/push
+          # Credentials come from a Secret in openshift-user-workload-monitoring:
+          # authorization:
+          #   type: Bearer
+          #   credentials: { name: remote-write-token, key: token }
+          # basicAuth:
+          #   username: { name: remote-write-auth, key: user }
+          #   password: { name: remote-write-auth, key: password }
+          writeRelabelConfigs:
+            - sourceLabels: [__name__]
+              regex: ocp_lifecycle_.*
+              action: keep

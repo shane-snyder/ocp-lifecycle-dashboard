@@ -1,0 +1,15 @@
+# The data changes every few hours at most, so a slow scrape loses nothing.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ocp-lifecycle-exporter
+  namespace: ocp-lifecycle
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ocp-lifecycle-exporter
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 2m
+      scrapeTimeout: 30s

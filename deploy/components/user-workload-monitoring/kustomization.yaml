@@ -1,0 +1,12 @@
+# Scraped by user workload monitoring (openshift-user-workload-monitoring),
+# Red Hat's supported path for workloads you deploy yourself. Requires
+# enableUserWorkload: true in the cluster-monitoring-config ConfigMap:
+# https://docs.redhat.com/en/documentation/openshift_container_platform/latest/html/monitoring/configuring-user-workload-monitoring
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+
+resources:
+  - servicemonitor.yaml
+
+components:
+  - ../alerts

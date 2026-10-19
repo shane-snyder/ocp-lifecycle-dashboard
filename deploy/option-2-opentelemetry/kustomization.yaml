@@ -1,0 +1,10 @@
+# Option 2: an OpenTelemetry collector scrapes the exporter and forwards the
+# series to a metrics backend. OpenShift monitoring is not involved.
+#
+#   oc apply -k deploy/option-2-opentelemetry
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../base
+  - opentelemetry-collector.yaml

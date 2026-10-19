@@ -1,0 +1,23 @@
+# Points at the backend the collector writes to. CHANGE ME: url (and auth).
+apiVersion: grafana.integreatly.org/v1beta1
+kind: GrafanaDatasource
+metadata:
+  name: ocp-lifecycle
+spec:
+  instanceSelector:
+    matchLabels:
+      dashboards: grafana
+  datasource:
+    # The dashboard selects this uid by default.
+    uid: ocp-lifecycle
+    name: OpenShift lifecycle metrics
+    type: prometheus
+    access: proxy
+    # Prometheus: http://prometheus:9090   Mimir: http://mimir:8080/prometheus
+    url: https://metrics.example.com/prometheus
+    jsonData:
+      httpMethod: POST
+      timeInterval: 2m
+      # httpHeaderName1: X-Scope-OrgID
+    # secureJsonData:
+    #   httpHeaderValue1: my-tenant

@@ -1,0 +1,14 @@
+# Option 1: the cluster's own Prometheus scrapes the exporter.
+#
+#   oc apply -k deploy/option-1-openshift-monitoring
+#
+# Defaults to user workload monitoring (must be enabled). To use the platform
+# Prometheus instead, swap the component below for ../components/platform-monitoring.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../base
+
+components:
+  - ../components/user-workload-monitoring
