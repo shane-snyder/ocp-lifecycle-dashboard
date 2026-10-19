@@ -217,6 +217,24 @@ Notes:
 - **Alerts:** the alerts run on each managed cluster's Prometheus and are
   forwarded to the hub's Alertmanager like any other platform alert.
 
+## Importing the dashboard into any Grafana
+
+For Grafana that isn't managed by the Grafana Operator (Grafana Cloud, a VM, a
+container, another cluster), import the JSON for your collection method:
+
+| Collection method | File | Cluster label |
+|---|---|---|
+| Prometheus: option 1 (Thanos Querier or remote-write), option 3 (ACM's Thanos) | [`dashboards/ocp-lifecycle.json`](dashboards/ocp-lifecycle.json) | `cluster` |
+| OpenTelemetry: option 2 | [`dashboards/ocp-lifecycle-otel.json`](dashboards/ocp-lifecycle-otel.json) | `k8s_cluster_name` |
+
+1. Add a **Prometheus** data source pointing at wherever the `ocp_lifecycle_*`
+   series are stored (Thanos Querier, Prometheus, Mimir, Thanos and so on).
+2. Go to **Dashboards → New → Import**. Upload the file or paste its contents.
+3. When asked for **Prometheus**, pick that data source, then click **Import**.
+
+Both are tested on Grafana 12 and 13. You can switch data sources later from
+the dashboard's **Data source** selector.
+
 ## What it shows
 
 | Question | Where |

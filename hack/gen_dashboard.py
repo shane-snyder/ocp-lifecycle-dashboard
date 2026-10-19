@@ -375,6 +375,14 @@ def dashboard(datasource=None, datasource_name=None, cluster_label="cluster"):
         ]},
         "panels": panels,
     }
+    if not datasource:
+        # For Dashboards -> Import: Grafana asks for a Prometheus data source
+        # and substitutes it here.
+        d = {"__inputs": [{"name": "DS_PROMETHEUS", "label": "Prometheus", "type": "datasource",
+                           "pluginId": "prometheus", "pluginName": "Prometheus",
+                           "description": "Holds the ocp_lifecycle_* series"}],
+             **d}
+        d["templating"]["list"][0]["current"] = {"text": "${DS_PROMETHEUS}", "value": "${DS_PROMETHEUS}"}
     return _relabel(d, cluster_label) if otel else d
 
 
